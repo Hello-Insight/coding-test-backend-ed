@@ -52,7 +52,7 @@ def postUser():
                    content["first_name"], 
                    content["last_name"]) 
         query_db(usr.update_sql(), usr.update_user_tuple())
-        id_user = int(content["id"])
+        id_user = str(content["id"])
         status = "200"
         message = "The user was updated successfully"
     else:
@@ -63,7 +63,7 @@ def postUser():
                    content["last_name"]) 
         query_db(usr.insert_sql(), usr.insert_user_tuple())
         q = query_db("select max(ID) 'm' from main.USER", (), True)
-        id_user = int(q["m"])
+        id_user = str(q["m"])
         status = "200"
         message = "The user was created successfully"
 
