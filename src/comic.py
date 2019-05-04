@@ -15,14 +15,17 @@ class Comic:
         self.title = title
         self.day = day
 
+    def max_sql(self):
+        return "select max(ID) 'm' from main.COMIC"
+
     def insert_sql(self):
         return '''
-               insert into main.COMIC (MONTH, NUM, LINK, YEAR, NEWS, 
-                                       SAFE_TITLE, TRANSCRIPT, ALT, 
-                                       IMG, TITLE, DAY) 
-               values (?, ?, ?, ?, ?, ? ,?, ?; ?, ?, ?)
+               insert 
+                 into main.COMIC ("MONTH", "NUM", "LINK", "YEAR",
+                                  "NEWS", "SAFE_TITLE", "TRANSCRIPT",
+                                  "ALT", "IMG", "TITLE", "DAY") 
+               values (?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?)
                '''
-
 
     def insert_tuple(self):
         return (self.month, self.num, self.link, self.year, self.news, 
@@ -31,11 +34,10 @@ class Comic:
 
     def update_sql(self):
         return '''
-               update main.COMIC set MONTH = ?, NUM = ?, LINK = ?, 
-                                     YEAR = ?, NEWS = ?, 
-                                     SAFE_TITLE = ?, TRANSCRIPT = ?, 
-                                     ALT = ?, IMG = ?, TITLE = ?, 
-                                     DAY = ? 
+               update main.COMIC 
+                  set "MONTH" = ?, NUM = ?, LINK = ?,  "YEAR" = ?, 
+                      NEWS = ?, SAFE_TITLE = ?, TRANSCRIPT = ?, 
+                      ALT = ?, IMG = ?, TITLE = ?, "DAY" = ? 
                 where ID = ?
                '''
 
@@ -54,3 +56,13 @@ class Comic:
 
     def to_dict(self):
         return self.__dict__
+
+    def delete_sql(self):
+        return '''
+               delete 
+                 from main.COMIC
+                where ID = ?
+               '''
+
+    def delete_tuple(self):
+        return (self.id_comic, )

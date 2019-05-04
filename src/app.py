@@ -34,7 +34,7 @@ def index():
     return 'Server Works!'
 
 @app.route('/user', methods = ['POST'])
-def postUser():
+def post_user():
     content = request.get_json()
     update = True
     id_user = 0
@@ -113,13 +113,14 @@ def logout():
 
     return json.dumps(result)
 
-@app.route('/comic/')
+@app.route('/comic/', methods = ['GET'])
 def search():
     tag = request.args.get('tag', '').lower()
     com = Comic("", "", "", "", "", "", "", "", "", "", "", "")
     q = query_db(com.search_sql(), ('%{}%'.format(tag), 
                                     '%{}%'.format(tag)))
     result = []
+
     for comic in q:
         com = Comic(str(comic['ID']), comic['MONTH'], 
                     str(comic['NUM']), comic['LINK'], 
@@ -130,4 +131,65 @@ def search():
         dictionary = com.to_dict()
         dictionary['id'] = dictionary.pop('id_comic')
         result.append(dictionary)
+
+    return json.dumps(result)
+
+@app.route('/comic/<int:id_comic>', methods = ['DELETE'])
+def delete(id_comic):
+    com = Comic(str(id_comic), 
+                "", "", "", "", "", "", "", "", "", "", "")
+    q = query_db(com.delete_sql(), com.delete_tuple())
+
+    result = {
+        "status": "200",
+        "message": "The comic was deleted successfully",
+        "id": str(id_comic)
+    }
+
+    return json.dumps(result)
+
+@app.route('/comic', methods = ['POST'])
+def post_comic():
+    content = request.get_json()
+    update = True
+    id_user = 0
+    status = "500"
+    message = "Error"
+
+    try:
+        content["id"]
+    except KeyError as e:
+        update = False
+
+    if update:
+        com = Comic(content["id"], content["month"], 
+                    content["num"], content["link"], 
+                    content["year"], content["news"], 
+                    content["safe_title"], content["transcript"], 
+                    content["alt"], content["img"], 
+                    content["title"], content["day"])
+        query_db(com.update_sql(), com.update_tuple())
+        id_comic = str(content["id"])
+        status = "200"
+        message = "The comic was updated successfully"
+    else:
+        com = Comic("", content["month"], 
+                    content["num"], content["link"], 
+                    content["year"], content["news"], 
+                    content["safe_title"], content["transcript"], 
+                    content["alt"], content["img"], 
+                    content["title"], content["day"])
+        print("com", com.to_dict())
+        query_db(com.insert_sql(), com.insert_tuple())
+        q = query_db(com.max_sql(), (), True)
+        id_comic = str(q["m"])
+        status = "200"
+        message = "The comic was created successfully"
+
+    result = {
+        "status": status,
+        "message": message,
+        "id": id_comic
+    }
+
     return json.dumps(result)

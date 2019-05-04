@@ -16,8 +16,8 @@ class User:
         return 'insert into main.USER (EMAIL, PASSWORD_HASH, FIRST_NAME, LAST_NAME) values (?, ?, ?, ?)'
 
     def insert_tuple(self):
-        hashed = bcrypt.hashpw(self.password.encode('utf-8'), bcrypt.gensalt())
-        return (self.email, hashed, self.first_name, self.last_name)
+        pw_hash = bcrypt.hashpw(self.password.encode('utf-8'), bcrypt.gensalt())
+        return (self.email, pw_hash, self.first_name, self.last_name)
 
     def update_sql(self):
         return 'update main.USER set EMAIL = ?, PASSWORD_HASH = ?, FIRST_NAME = ?, LAST_NAME = ? where ID = ?'
