@@ -2,9 +2,10 @@ import json
 import sqlite3
 from flask import Flask, session, request, g
 from user import User
+from comic import Comic
+
 app = Flask(__name__)
 app.secret_key = 's3cr3t_k3y!!!'
-
 DATABASE = 'src/database.db'
 
 def get_db():
@@ -110,4 +111,23 @@ def logout():
         "message": "User logged out successfully"
     }
 
+    return json.dumps(result)
+
+@app.route('/comic/')
+def search():
+    tag = request.args.get('tag', '').lower()
+    com = Comic("", "", "", "", "", "", "", "", "", "", "", "")
+    q = query_db(com.search_sql(), ('%{}%'.format(tag), 
+                                    '%{}%'.format(tag)))
+    result = []
+    for comic in q:
+        com = Comic(str(comic['ID']), comic['MONTH'], 
+                    str(comic['NUM']), comic['LINK'], 
+                    comic['YEAR'], comic['NEWS'], 
+                    comic['SAFE_TITLE'], comic['TRANSCRIPT'], 
+                    comic['ALT'], comic['IMG'], 
+                    comic['TITLE'], comic['DAY'])
+        dictionary = com.to_dict()
+        dictionary['id'] = dictionary.pop('id_comic')
+        result.append(dictionary)
     return json.dumps(result)
