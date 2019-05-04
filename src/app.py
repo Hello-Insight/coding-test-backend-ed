@@ -1,10 +1,12 @@
 import json
 import sqlite3
 from flask import Flask, session, request, g
+from flask_cors import CORS, logging
 from user import User
 from comic import Comic
 
 app = Flask(__name__)
+CORS(app, resources = {r"/*": {"origins": "*"}})
 app.secret_key = 's3cr3t_k3y!!!'
 DATABASE = 'src/database.db'
 
@@ -113,43 +115,28 @@ def logout():
 
     return json.dumps(result)
 
-@app.route('/comic/', methods = ['GET'])
-def search():
-    tag = request.args.get('tag', '').lower()
-    com = Comic("", "", "", "", "", "", "", "", "", "", "", "")
-    q = query_db(com.search_sql(), ('%{}%'.format(tag), 
+@app.route('/comic/', methods = ['GET', 'POST'])
+def comic():
+    if request.method == 'GET':
+        tag = request.args.get('tag', '').lower()
+        com = Comic("", "", "", "", "", "", "", "", "", "", "", "")
+        q = query_db(com.search_sql(), ('%{}%'.format(tag), 
                                     '%{}%'.format(tag)))
-    result = []
+        result = []
 
-    for comic in q:
-        com = Comic(str(comic['ID']), comic['MONTH'], 
-                    str(comic['NUM']), comic['LINK'], 
-                    comic['YEAR'], comic['NEWS'], 
-                    comic['SAFE_TITLE'], comic['TRANSCRIPT'], 
-                    comic['ALT'], comic['IMG'], 
-                    comic['TITLE'], comic['DAY'])
-        dictionary = com.to_dict()
-        dictionary['id'] = dictionary.pop('id_comic')
-        result.append(dictionary)
+        for comic in q:
+            com = Comic(str(comic['ID']), comic['MONTH'], 
+                        str(comic['NUM']), comic['LINK'], 
+                        comic['YEAR'], comic['NEWS'], 
+                        comic['SAFE_TITLE'], comic['TRANSCRIPT'], 
+                        comic['ALT'], comic['IMG'], 
+                        comic['TITLE'], comic['DAY'])
+            dictionary = com.to_dict()
+            dictionary['id'] = dictionary.pop('id_comic')
+            result.append(dictionary)
 
-    return json.dumps(result)
+        return json.dumps(result)
 
-@app.route('/comic/<int:id_comic>', methods = ['DELETE'])
-def delete(id_comic):
-    com = Comic(str(id_comic), 
-                "", "", "", "", "", "", "", "", "", "", "")
-    q = query_db(com.delete_sql(), com.delete_tuple())
-
-    result = {
-        "status": "200",
-        "message": "The comic was deleted successfully",
-        "id": str(id_comic)
-    }
-
-    return json.dumps(result)
-
-@app.route('/comic', methods = ['POST'])
-def post_comic():
     content = request.get_json()
     update = True
     id_user = 0
@@ -190,6 +177,20 @@ def post_comic():
         "status": status,
         "message": message,
         "id": id_comic
+    }
+
+    return json.dumps(result)
+
+@app.route('/comic/<int:id_comic>', methods = ['DELETE'])
+def delete(id_comic):
+    com = Comic(str(id_comic), 
+                "", "", "", "", "", "", "", "", "", "", "")
+    q = query_db(com.delete_sql(), com.delete_tuple())
+
+    result = {
+        "status": "200",
+        "message": "The comic was deleted successfully",
+        "id": str(id_comic)
     }
 
     return json.dumps(result)

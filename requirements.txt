@@ -1,2 +1,4 @@
 Flask==1.0.2
 bcrypt==3.1.6
+flask-cors==3.0.7
+
