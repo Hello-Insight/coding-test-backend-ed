@@ -1,7 +1,7 @@
 import json
 import sqlite3
 from flask import Flask, session, request, g
-from flask_cors import CORS, logging
+from flask_cors import CORS
 from user import User
 from comic import Comic
 
@@ -121,7 +121,7 @@ def comic():
         tag = request.args.get('tag', '').lower()
         com = Comic("", "", "", "", "", "", "", "", "", "", "", "")
         q = query_db(com.search_sql(), ('%{}%'.format(tag), 
-                                    '%{}%'.format(tag)))
+                                        '%{}%'.format(tag)))
         result = []
 
         for comic in q:
@@ -166,7 +166,6 @@ def comic():
                     content["safe_title"], content["transcript"], 
                     content["alt"], content["img"], 
                     content["title"], content["day"])
-        print("com", com.to_dict())
         query_db(com.insert_sql(), com.insert_tuple())
         q = query_db(com.max_sql(), (), True)
         id_comic = str(q["m"])
