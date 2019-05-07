@@ -1,17 +1,22 @@
 import json
 import sqlite3
 import datetime
-from flask import Flask, session, request, g
+from flask import Flask, request, g
 from flask_cors import CORS
-from flask_jwt import JWT, jwt_required
+from flask_jwt import JWT, jwt_required, current_identity
 from user import User
 from comic import Comic
 
+# Configuration
+
 app = Flask(__name__)
 CORS(app, resources = {r"/*": {"origins": "*"}})
-app.secret_key = 's3cr3t_k3y!!!'
+app.config['SECRET_KEY'] = 'some-secret-string'
+app.config['JWT_AUTH_HEADER_PREFIX'] = 'Bearer'
 app.config['JWT_EXPIRATION_DELTA'] = datetime.timedelta(days=1)
 DATABASE = 'src/database.db'
+
+# Database
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -34,7 +39,9 @@ def query_db(query, args=(), one=False):
     cur.close()
     return (rv[0] if rv else None) if one else rv
 
-class Usr(object):
+# JWT Authentication
+
+class U(object):
     def __init__(self, id):
         self.id = id
 
@@ -45,7 +52,7 @@ def authenticate(username, password):
     try:
         pw_hash = q["pw_hash"]
         if usr.check_pw(pw_hash):
-            user = Usr(id=q["id"])
+            user = U(id=q["id"])
             return user
     except TypeError:
         None
@@ -56,9 +63,11 @@ def identity(payload):
 
 jwt = JWT(app, authenticate, identity)
 
-@app.route('/')
-def index():
-    return 'Server Works!'
+@jwt_required()
+def get_current_identity():
+    return dict(current_identity)["user_id"]
+
+# User Create and Update
 
 @app.route('/user', methods = ['POST'])
 def post_user():
@@ -74,15 +83,16 @@ def post_user():
         update = False
 
     if update:
-        usr = User(content["id"], 
-                   content["email"], 
-                   content["password"], 
-                   content["first_name"], 
-                   content["last_name"]) 
-        query_db(usr.update_sql(), usr.update_tuple())
-        id_user = str(content["id"])
-        status = "200"
-        message = "The user was updated successfully"
+        if get_current_identity() == int(content["id"]):
+            usr = User(content["id"], 
+                       content["email"], 
+                       content["password"], 
+                       content["first_name"], 
+                       content["last_name"]) 
+            query_db(usr.update_sql(), usr.update_tuple())
+            id_user = content["id"]
+            status = "200"
+            message = "The user was updated successfully"
     else:
         usr = User("", content["email"], 
                    content["password"], 
@@ -102,20 +112,10 @@ def post_user():
 
     return json.dumps(result)
 
-@app.route('/user/login', methods = ['GET', 'POST'])
+# User Login and Logout
+
+@app.route('/user/login', methods = ['POST'])
 def login():
-    if request.method == 'GET':
-        email = request.args.get('email', '')
-        usr = User("", email, "", "", "")
-        q = query_db(usr.id_sql(), usr.login_tuple(), True)
-        id_user = q["id"]
-        
-        result = {
-            "id": id_user
-        }
-        
-        return json.dumps(result)
-        
     content = request.get_json()
     status = "401"
     message = "Please check your credentials"
@@ -126,8 +126,6 @@ def login():
     try:
         pw_hash = q["pw_hash"]
         if usr.check_pw(pw_hash):
-            session["first"] = q["first"]
-            session["last"] = q["last"]
             status = "200"
             message = "User logged in successfully"
     except TypeError:
@@ -142,8 +140,6 @@ def login():
 
 @app.route('/user/logout', methods = ['POST'])
 def logout():
-    session.pop('first', None)
-    session.pop('last', None)
 
     result = {
         "status": "200",
@@ -152,7 +148,10 @@ def logout():
 
     return json.dumps(result)
 
+# Comic Search, Create and Update
+
 @app.route('/comic/', methods = ['GET', 'POST'])
+@jwt_required()
 def comic():
     if request.method == 'GET':
         tag = request.args.get('tag', '').lower()
@@ -216,6 +215,8 @@ def comic():
     }
 
     return json.dumps(result)
+
+# Comic Delete
 
 @app.route('/comic/<int:id_comic>', methods = ['DELETE'])
 @jwt_required()
